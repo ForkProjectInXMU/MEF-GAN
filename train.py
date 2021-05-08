@@ -28,36 +28,48 @@ retrain = False
 model_path ='./models/'
 
 
+# source_imgs为h5文件中，从data中取出的数据
+# save_path为保存模型的dir
+# EPOCHES_set为训练轮数，默认为4
+# BATCH_SIZE默认为19
 def train(source_imgs, save_path, EPOCHES_set, BATCH_SIZE):
 
+	# 计时，存好训练轮数，并输出训练轮数、bs
 	start_time = datetime.now()
 	EPOCHS = EPOCHES_set
 	print('Epoches: %d, Batch_size: %d' % (EPOCHS, BATCH_SIZE))
 
+	# 获取训练集数量，算出一共有几个batch，并输出训练集大小
 	num_imgs = source_imgs.shape[0]
 	mod = num_imgs % BATCH_SIZE
 	n_batches = int(num_imgs // BATCH_SIZE)
 	print('Train images number %d, Batches: %d.\n' % (num_imgs, n_batches))
 
+	# 如果训练集数量/bs除不尽那么就把多出来的抹掉，那些数据丢掉不要了
 	if mod > 0:
 		print('Train set has been trimmed %d samples...\n' % mod)
 		source_imgs = source_imgs[:-mod]
 
+	# 创建一个tensorflow配置结构体，并且设置gpu为逐渐按需申请显存
 	config = tf.ConfigProto()
 	config.gpu_options.allow_growth = True
 
 	# create the graph
+	# 创建一个Graph计算图、Session会话
 	with tf.Graph().as_default(), tf.Session(config=config) as sess:
+		# 搞好低曝光、高曝光和真实值的占位数据
 		SOURCE_oe = tf.placeholder(tf.float32, shape = (BATCH_SIZE, patch_size, patch_size, 3), name = 'OE_IMG')
 		SOURCE_ue = tf.placeholder(tf.float32, shape = (BATCH_SIZE, patch_size, patch_size, 3), name = 'UE_IMG')
 		GT = tf.placeholder(tf.float32, shape = (BATCH_SIZE, patch_size, patch_size, 3), name = 'GT')
 		print('source img shape:', SOURCE_oe.shape)
 
 		# upsampling vis and ir images
+		# 初始化G，塞入o、u，生成图片g，并输出shape
 		G = Generator('Generator')
 		generated_img = G.transform(oe_img = SOURCE_oe, ue_img = SOURCE_ue, is_training=True)
 		print('generate img shape:', generated_img.shape)
 
+		# 初始化D，塞入GT、g
 		D = Discriminator('Discriminator')
 		D_real = D.discrim(GT, reuse = False)
 		D_fake = D.discrim(generated_img, reuse = True)
@@ -197,6 +209,7 @@ def train(source_imgs, save_path, EPOCHES_set, BATCH_SIZE):
 	saver.save(sess, save_path + str(epoch) + '/' + str(epoch) + '.ckpt')
 
 
+# 输入img，用1个3x3卷完，出结果g。
 def grad(img):
 	kernel = tf.constant([[1 / 8, 1 / 8, 1 / 8], [1 / 8, -1, 1 / 8], [1 / 8, 1 / 8, 1 / 8]])
 	kernel = tf.expand_dims(kernel, axis = -1)
@@ -205,6 +218,7 @@ def grad(img):
 	return g
 
 
+# rgb颜色空间到ihs颜色空间的转换，明度(I)和色调(H)、饱和度(S)
 def rgb2ihs(rgbimg):
 	r = rgbimg[:, :, 0]
 	g = rgbimg[:, :, 1]
@@ -216,6 +230,8 @@ def rgb2ihs(rgbimg):
 	return ihsimg
 
 
+# L1_norm求出了每个样本的img矩阵的平均数x（在HW维度上求和再除元素个数）
+# E为这个平均数x的平均数
 def L1_LOSS(batchimg):
 	L1_norm = tf.reduce_sum(tf.abs(batchimg), axis = [1, 2])/(patch_size * patch_size)
 	E = tf.reduce_mean(L1_norm)

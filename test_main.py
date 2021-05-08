@@ -14,6 +14,7 @@ import scipy.ndimage
 import scipy.io as scio
 
 
+
 BATCH_SIZE = 18
 EPOCHES = 4
 LOGGING = 20
