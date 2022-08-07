@@ -2,7 +2,7 @@
 
 import tensorflow as tf
 import numpy as np
-from scipy.misc import imread, imsave
+from imageio import imread, imsave
 from datetime import datetime
 from os import listdir, mkdir, sep
 from os.path import join, exists, splitext
@@ -48,9 +48,9 @@ def generate(oe_path, ue_path, model_path, index, output_path = None, format=Non
 
 	start=time.time()
 
-	with tf.Graph().as_default(), tf.Session() as sess:
-		SOURCE_oe = tf.placeholder(tf.float32, shape = shape, name = 'SOURCE_oe')
-		SOURCE_ue = tf.placeholder(tf.float32, shape = shape, name = 'SOURCE_ue')
+	with tf.Graph().as_default(), tf.compat.v1.Session() as sess:
+		SOURCE_oe = tf.compat.v1.placeholder(tf.float32, shape = shape, name = 'SOURCE_oe')
+		SOURCE_ue = tf.compat.v1.placeholder(tf.float32, shape = shape, name = 'SOURCE_ue')
 
 		print('SOURCE_oe shape:', SOURCE_oe.shape)
 
@@ -58,10 +58,10 @@ def generate(oe_path, ue_path, model_path, index, output_path = None, format=Non
 		output_image = G.transform(oe_img=SOURCE_oe, ue_img=SOURCE_ue, is_training=False)
 
 		# restore the trained model and run the style transferring
-		g_list = tf.global_variables()
+		g_list = tf.compat.v1.global_variables()
 		# for g in g_list:
 		# 	print(g.name)
-		saver = tf.train.Saver(var_list = g_list)
+		saver = tf.compat.v1.train.Saver(var_list = g_list)
 
 		model_save_path = model_path +  'model.ckpt'
 		print(model_save_path)

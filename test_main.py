@@ -23,20 +23,20 @@ MODEL_SAVE_PATH = './models/'
 
 def main():
 	print('\nBegin to generate pictures ...\n')
-	path = './test_imgs/'
-	Format='.JPG'
+	path = r'C:\data\SICE_256\test'
 
 	T=[]
-	for i in range(5):
+	for i in range(30):
 		index = i + 1
-		ue_path = path + 'u' + str(index) + Format
-		oe_path = path + 'o' + str(index) + Format
+		ue_path = os.path.join(path, 'ue', str(index)+'.png')
+		oe_path = os.path.join(path, 'oe', str(index)+'.png')
 
-		t=generate(oe_path, ue_path, MODEL_SAVE_PATH, index, output_path = './results/', format=Format)
+		t = generate(oe_path, ue_path, MODEL_SAVE_PATH, index, output_path = './results/', format='.png')
 
 		T.append(t)
 		print("%s time: %s" % (index, t))
 	scio.savemat('time.mat', {'T': T})
+
 
 if __name__ == '__main__':
 	main()

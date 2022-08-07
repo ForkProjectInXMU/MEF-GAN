@@ -31,10 +31,10 @@ class Local(object):
 
 	def _create_variables(self, shape, scope):
 		# with tf.device("/cpu:0"):
-		with tf.variable_scope(self.scope):
-			with tf.variable_scope('Local_net'):
-				with tf.variable_scope(scope):
-					kernel = tf.Variable(tf.truncated_normal(shape, stddev = WEIGHT_INIT_STDDEV), name = 'kernel')
+		with tf.compat.v1.variable_scope(self.scope):
+			with tf.compat.v1.variable_scope('Local_net'):
+				with tf.compat.v1.variable_scope(scope):
+					kernel = tf.Variable(tf.compat.v1.truncated_normal(shape, stddev = WEIGHT_INIT_STDDEV), name = 'kernel')
 					bias = tf.Variable(tf.zeros(shape[-1]), name = 'bias')
 		return (kernel, bias)
 
@@ -102,19 +102,19 @@ class Sa_net(object):
 
 	def _create_variables(self, shape, scope):
 		# with tf.device("/cpu:0"):
-		with tf.variable_scope(self.scope):
-			with tf.variable_scope('Sa_net'):
-				with tf.variable_scope(scope):
-					kernel = tf.Variable(tf.truncated_normal(shape, stddev = WEIGHT_INIT_STDDEV), name = 'kernel')
+		with tf.compat.v1.variable_scope(self.scope):
+			with tf.compat.v1.variable_scope('Sa_net'):
+				with tf.compat.v1.variable_scope(scope):
+					kernel = tf.Variable(tf.compat.v1.truncated_normal(shape, stddev = WEIGHT_INIT_STDDEV), name = 'kernel')
 					bias = tf.Variable(tf.zeros(shape[-1]), name = 'bias')
 		return (kernel, bias)
 
 	def _create_de_variables(self, shape, scope):
 		# with tf.device("/cpu:0"):
-		with tf.variable_scope(self.scope):
-			with tf.variable_scope('Sa_net'):
-				with tf.variable_scope(scope):
-					kernel = tf.Variable(tf.truncated_normal(shape, stddev = WEIGHT_INIT_STDDEV), name = 'kernel')
+		with tf.compat.v1.variable_scope(self.scope):
+			with tf.compat.v1.variable_scope('Sa_net'):
+				with tf.compat.v1.variable_scope(scope):
+					kernel = tf.Variable(tf.compat.v1.truncated_normal(shape, stddev = WEIGHT_INIT_STDDEV), name = 'kernel')
 		return kernel
 
 
@@ -136,7 +136,7 @@ class Sa_net(object):
 
 		## out = self_attention(inputs = out, channel_factor = 8, scope_name = self.scope, name = "self-attention")
 
-		out, attention_map = attention(x=out, ch=out.shape[-1].value, sn = True, scope_name = self.scope, name = 'self_attention')
+		out, attention_map = attention(x=out, ch=out.shape[-1], sn = True, scope_name = self.scope, name = 'self_attention')
 		# print('Sa self attention shape:', out.shape)
 
 		out = up_sample(out, 2)
@@ -175,10 +175,10 @@ class Merge_net(object):
 
 	def _create_variables(self, shape, scope):
 		# with tf.device("/cpu:0"):
-		with tf.variable_scope(self.scope):
-			with tf.variable_scope('Merge_net'):
-				with tf.variable_scope(scope):
-					kernel = tf.Variable(tf.truncated_normal(shape, stddev = WEIGHT_INIT_STDDEV), name = 'kernel')
+		with tf.compat.v1.variable_scope(self.scope):
+			with tf.compat.v1.variable_scope('Merge_net'):
+				with tf.compat.v1.variable_scope(scope):
+					kernel = tf.Variable(tf.compat.v1.truncated_normal(shape, stddev = WEIGHT_INIT_STDDEV), name = 'kernel')
 					bias = tf.Variable(tf.zeros(shape[-1]), name = 'bias')
 		return (kernel, bias)
 
@@ -210,27 +210,27 @@ class Merge_net(object):
 
 def residual_block(input, ch, is_training, scope):
 	# with tf.device("/cpu:0"):
-	with tf.variable_scope(scope):
-		W1 = tf.Variable(tf.truncated_normal([3, 3, ch, ch], stddev = tf.sqrt(2 / ch)), dtype = np.float32, name = 'kernel1')
+	with tf.compat.v1.variable_scope(scope):
+		W1 = tf.Variable(tf.compat.v1.truncated_normal([3, 3, ch, ch], stddev = tf.sqrt(2 / ch)), dtype = np.float32, name = 'kernel1')
 	with tf.device(device1):
 		# tf.add_to_collection('losses', tf.multiply(tf.nn.l2_loss(W1), self.wd))
 		x_padded = tf.pad(input, [[0, 0], [1, 1], [1, 1], [0, 0]], mode = 'REFLECT')
-		L1 = tf.nn.conv2d(input=x_padded, filter=spectral_norm(W1, scope_name = scope+'/sn1'), strides = [1, 1, 1, 1], padding = 'VALID')
+		L1 = tf.nn.conv2d(input=x_padded, filters=spectral_norm(W1, scope_name = scope+'/sn1'), strides = [1, 1, 1, 1], padding = 'VALID')
 
-		with tf.variable_scope(scope + '/sn_b1/'):
-			L1 = tf.layers.batch_normalization(L1, training = is_training)
+		with tf.compat.v1.variable_scope(scope + '/sn_b1/'):
+			L1 = tf.compat.v1.layers.batch_normalization(L1, training = is_training)
 		L1 = tf.nn.relu(L1)
 
 	# with tf.device("/cpu:0"):
-	with tf.variable_scope(scope):
-		W2 = tf.Variable(tf.truncated_normal([3, 3, ch, ch], stddev = tf.sqrt(2 / ch)), dtype = np.float32, name = 'kernel2')
+	with tf.compat.v1.variable_scope(scope):
+		W2 = tf.Variable(tf.compat.v1.truncated_normal([3, 3, ch, ch], stddev = tf.sqrt(2 / ch)), dtype = np.float32, name = 'kernel2')
 
 	with tf.device(device1):
 		# tf.add_to_collection('losses', tf.multiply(tf.nn.l2_loss(W2), self.wd))
 		L1_padded = tf.pad(L1, [[0, 0], [1, 1], [1, 1], [0, 0]], mode = 'REFLECT')
-		L2 = tf.nn.conv2d(input=L1_padded, filter=spectral_norm(W2, scope_name = scope+'/sn2'), strides = [1, 1, 1, 1], padding = 'VALID')
-		with tf.variable_scope(scope + '/sn_b2/'):
-			L2 = tf.layers.batch_normalization(L2, training = is_training)
+		L2 = tf.nn.conv2d(input=L1_padded, filters=spectral_norm(W2, scope_name = scope+'/sn2'), strides = [1, 1, 1, 1], padding = 'VALID')
+		with tf.compat.v1.variable_scope(scope + '/sn_b2/'):
+			L2 = tf.compat.v1.layers.batch_normalization(L2, training = is_training)
 
 		L3 = tf.add(L2, input)
 		L3 = tf.nn.relu(L3)
@@ -243,14 +243,14 @@ def conv2d(x, kernel, bias, use_relu = True, Scope = None, BN = True, sn = True,
 		x_padded = tf.pad(x, [[0, 0], [1, 1], [1, 1], [0, 0]], mode = 'REFLECT')
 		# conv and add bias
 		if sn:
-			out = tf.nn.conv2d(input = x_padded, filter = spectral_norm(kernel, scope_name = Scope), strides = [1, 1, 1, 1],
+			out = tf.nn.conv2d(input = x_padded, filters = spectral_norm(kernel, scope_name = Scope), strides = [1, 1, 1, 1],
 			                   padding = 'VALID')
 		else:
-			out = tf.nn.conv2d(input = x_padded, filter = kernel, strides = [1, 1, 1, 1], padding = 'VALID')
+			out = tf.nn.conv2d(input = x_padded, filters = kernel, strides = [1, 1, 1, 1], padding = 'VALID')
 		out = tf.nn.bias_add(out, bias)
 		if BN:
-			with tf.variable_scope(Scope):
-				out = tf.layers.batch_normalization(out, training = is_training)
+			with tf.compat.v1.variable_scope(Scope):
+				out = tf.compat.v1.layers.batch_normalization(out, training = is_training)
 		if use_relu:
 			#out = tf.nn.relu(out)
 			out = tf.maximum(out, 0.2 * out)
@@ -263,14 +263,14 @@ def sa_conv2d(x, kernel, bias, use_relu = True, Scope = None, BN = True, sn = Tr
 		x_padded = tf.pad(x, [[0, 0], [1, 1], [1, 1], [0, 0]], mode = 'REFLECT')
 		# conv and add bias
 		if sn:
-			out = tf.nn.conv2d(input = x_padded, filter = spectral_norm(kernel, scope_name = Scope), strides = strides,
+			out = tf.nn.conv2d(input = x_padded, filters = spectral_norm(kernel, scope_name = Scope), strides = strides,
 			                   padding = 'VALID')
 		else:
-			out = tf.nn.conv2d(input = x_padded, filter = kernel, strides = strides, padding = 'VALID')
+			out = tf.nn.conv2d(input = x_padded, filters = kernel, strides = strides, padding = 'VALID')
 		out = tf.nn.bias_add(out, bias)
 		if BN:
-			with tf.variable_scope(Scope):
-				out = tf.layers.batch_normalization(out, training = is_training)
+			with tf.compat.v1.variable_scope(Scope):
+				out = tf.compat.v1.layers.batch_normalization(out, training = is_training)
 		if use_relu:
 			# out = tf.nn.relu(out)
 			out = tf.maximum(out, 0.2 * out)
@@ -279,7 +279,7 @@ def sa_conv2d(x, kernel, bias, use_relu = True, Scope = None, BN = True, sn = Tr
 
 def sa_deconv2d(x, kernel, strides):
 	with tf.device(device2):
-		out = tf.nn.conv2d_transpose(x, filter = kernel, output_shape = [int(x.shape[0]), int(x.shape[1]) * int(strides[2]), int(x.shape[2])*int(strides[2]), int(kernel.shape[2])], strides = strides, padding = 'SAME')
+		out = tf.nn.conv2d_transpose(x, filters = kernel, output_shape = [int(x.shape[0]), int(x.shape[1]) * int(strides[2]), int(x.shape[2])*int(strides[2]), int(kernel.shape[2])], strides = strides, padding = 'SAME')
 	return out
 
 # def self_attention(inputs, channel_factor = 8, scope_name = None, name = 'self_attention'):
@@ -301,8 +301,8 @@ def sa_deconv2d(x, kernel, strides):
 
 def attention(x, ch, sn = False, scope_name=None, name = 'self_attention', reuse = False):
 	with tf.device(device2):
-		with tf.variable_scope(scope_name):
-			with tf.variable_scope(name, reuse = reuse):
+		with tf.compat.v1.variable_scope(scope_name):
+			with tf.compat.v1.variable_scope(name, reuse = reuse):
 				f = conv(x, ch // 4, kernel_size = 1, stride = 1, sn = sn, scope = 'f_conv')  # [bs, h, w, c']
 				g = conv(x, ch // 4, kernel_size = 1, stride = 1, sn = sn, scope = 'g_conv')  # [bs, h, w, c']
 				h = conv(x, ch, kernel_size = 1, stride = 1, sn = sn, scope = 'h_conv')  # [bs, h, w, c]
@@ -313,7 +313,7 @@ def attention(x, ch, sn = False, scope_name=None, name = 'self_attention', reuse
 				beta = tf.nn.softmax(s)  # attention map
 
 				o = tf.matmul(beta, hw_flatten(h))  # [bs, N, C]
-				gamma = tf.Variable(tf.truncated_normal([1], stddev=WEIGHT_INIT_STDDEV), name='gamma')
+				gamma = tf.Variable(tf.compat.v1.truncated_normal([1], stddev=WEIGHT_INIT_STDDEV), name='gamma')
 
 				o = tf.reshape(o, shape = x.shape)  # [bs, h, w, C]
 				x = gamma * o + x
@@ -326,24 +326,24 @@ def attention(x, ch, sn = False, scope_name=None, name = 'self_attention', reuse
 def conv(x, channels, kernel_size = 3, stride = 2, pad = 0, pad_type = 'zero', use_bias = True, sn = True, scope = 'conv_0'):
 	weight_init = tf.random_normal_initializer(mean = 0.0, stddev = 0.02)
 	weight_regularizer = None
-	with tf.variable_scope(scope):
+	with tf.compat.v1.variable_scope(scope):
 		if pad_type == 'zero':
 			x = tf.pad(x, [[0, 0], [pad, pad], [pad, pad], [0, 0]])
 		if pad_type == 'reflect':
 			x = tf.pad(x, [[0, 0], [pad, pad], [pad, pad], [0, 0]], mode = 'REFLECT')
 		if sn:
 			# with tf.device("/cpu:0"):
-			kernel = tf.Variable(tf.truncated_normal([kernel_size, kernel_size, x.shape[-1].value, channels], stddev = WEIGHT_INIT_STDDEV),
+			kernel = tf.Variable(tf.compat.v1.truncated_normal([kernel_size, kernel_size, x.shape[-1], channels], stddev = WEIGHT_INIT_STDDEV),
 						                     name = 'kernel')
 			# print('Regularization kernel shape:', kernel.shape)
 			# kernel_loss=tf.reduce_sum(tf.square(kernel))/(kernel.shape[0].value*kernel.shape[1].value*kernel.shape[2].value*kernel.shape[3].value)
 			# print('kernel_loss shape:', kernel_loss.shape)
 			# tf.add_to_collection('Regularization_Losses', kernel_loss)
 
-			x = tf.nn.conv2d(input = x, filter = spectral_norm(kernel, scope_name = scope), strides = [1, stride, stride, 1], padding = 'VALID')
+			x = tf.nn.conv2d(input = x, filters = spectral_norm(kernel, scope_name = scope), strides = [1, stride, stride, 1], padding = 'VALID')
 			if use_bias:
 				#with tf.device("/cpu:0"):
-				bias = tf.Variable(tf.truncated_normal([channels], stddev = WEIGHT_INIT_STDDEV), name = 'bias')
+				bias = tf.Variable(tf.compat.v1.truncated_normal([channels], stddev = WEIGHT_INIT_STDDEV), name = 'bias')
 			x = tf.nn.bias_add(x, bias)
 		# else:
 		# 	x = tf.layers.conv2d(inputs = x, filters = channels, kernel_size = kernel_size, kernel_initializer = weight_init,
@@ -353,7 +353,7 @@ def conv(x, channels, kernel_size = 3, stride = 2, pad = 0, pad_type = 'zero', u
 
 
 def hw_flatten(x):
-	return tf.reshape(x, shape = [x.shape[0].value, -1, x.shape[-1].value])
+	return tf.reshape(x, shape = [x.shape[0], -1, x.shape[-1]])
 
 
 def spectral_norm(w, scope_name = None):
@@ -361,8 +361,8 @@ def spectral_norm(w, scope_name = None):
 	w = tf.reshape(w, [-1, w_shape[-1]])
 
 	# with tf.device("/cpu:0"):
-	with tf.variable_scope(scope_name):
-		u = tf.get_variable("u", [1, w_shape[-1]], initializer = tf.truncated_normal_initializer(), trainable = False)
+	with tf.compat.v1.variable_scope(scope_name):
+		u = tf.compat.v1.get_variable("u", [1, w_shape[-1]], initializer = tf.compat.v1.truncated_normal_initializer(), trainable = False)
 	u_hat = u
 	v_hat = None
 	v_ = tf.matmul(u_hat, tf.transpose(w))
@@ -386,4 +386,4 @@ def l2_norm(v, eps = 1e-12):
 def up_sample(x, scale_factor = 2):
 	_, h, w, _ = x.get_shape().as_list()
 	new_size = [h * scale_factor, w * scale_factor]
-	return tf.image.resize_nearest_neighbor(x, size = new_size)
+	return tf.compat.v1.image.resize_nearest_neighbor(x, size = new_size)
